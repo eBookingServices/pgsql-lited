@@ -1,0 +1,12 @@
+{
+	"name": "pgsql-lited",
+	"description": "Lightweight native PostgreSQL driver",
+	"copyright": "Copyright © 2018, Marcio Martins",
+	"authors": [ "Márcio Martins" ],
+	"license": "MIT License",
+	"targetType": "library",
+	"targetName": "pgsql-lited",
+	"dependencies": {
+		"vibe-d": ">=0.7.33"
+	}
+}
