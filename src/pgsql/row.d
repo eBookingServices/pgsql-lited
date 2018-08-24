@@ -148,7 +148,7 @@ struct PgSQLRow {
 	}
 
 package:
-	auto dispatchFast_(uint hash, string key) {
+	ref auto dispatchFast_(uint hash, string key) {
 		if (auto index = find_(hash, key))
 			return opIndex(index - 1);
 		throw new PgSQLErrorException("Column '" ~ key ~ "' was not found in this result set");
