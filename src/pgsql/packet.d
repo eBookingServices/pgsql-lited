@@ -191,7 +191,7 @@ struct OutputPacket {
 		out_ = buffer_.ptr + implicit_;
 	}
 
-	pragma(inline, true) void putz(const(char)[] x) {
+	void putz(const(char)[] x) {
 		put(x);
 		put!ubyte(0);
 	}

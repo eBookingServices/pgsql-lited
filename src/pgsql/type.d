@@ -349,7 +349,7 @@ struct PgSQLValue {
 		return !isNull ? get!T : def;
 	}
 
-	T get(T, string File=__FILE__, size_t Line=__LINE__)() const if (isScalarType!T && !is(T == enum)) {
+	T get(T)() const if (isScalarType!T && !is(T == enum)) {
 		switch(type_) with (PgColumnTypes) {
 		case CHAR:
 			return cast(T)(*cast(char*)buffer_.ptr);
@@ -364,31 +364,31 @@ struct PgSQLValue {
 		case DOUBLE:
 			return cast(T)(*cast(double*)buffer_.ptr);
 		default:
-			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to %s", name_, columnTypeName(type_), T.stringof), File, Line);
+			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to %s", name_, columnTypeName(type_), T.stringof));
 		}
 	}
 
-	T get(T, string File=__FILE__, size_t Line=__LINE__)() const if (is(Unqual!T == SysTime)) {
+	T get(T)() const if (is(Unqual!T == SysTime)) {
 		switch (type_) with (PgColumnTypes) {
 		case TIMESTAMP:
 		case TIMESTAMPTZ:
 			return (*cast(PgSQLTimestamp*)buffer_.ptr).toSysTime;
 		default:
-			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to %s", name_, columnTypeName(type_), T.stringof), File, Line);
+			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to %s", name_, columnTypeName(type_), T.stringof));
 		}
 	}
 
-	T get(T, string File=__FILE__, size_t Line=__LINE__)() const if (is(Unqual!T == DateTime)) {
+	T get(T)() const if (is(Unqual!T == DateTime)) {
 		switch (type_) with (PgColumnTypes) {
 		case TIMESTAMP:
 		case TIMESTAMPTZ:
 			return (*cast(PgSQLTimestamp*)buffer_.ptr).toDateTime;
 		default:
-			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to %s", name_, columnTypeName(type_), T.stringof), File, Line);
+			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to %s", name_, columnTypeName(type_), T.stringof));
 		}
 	}
 
-	T get(T, string File=__FILE__, size_t Line=__LINE__)() const if (is(Unqual!T == TimeOfDay)) {
+	T get(T)() const if (is(Unqual!T == TimeOfDay)) {
 		switch (type_) with (PgColumnTypes) {
 		case TIME:
 		case TIMETZ:
@@ -397,11 +397,11 @@ struct PgSQLValue {
 		case TIMESTAMPTZ:
 			return (*cast(PgSQLTimestamp*)buffer_.ptr).toTimeOfDay;
 		default:
-			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to %s", name_, columnTypeName(type_), T.stringof), File, Line);
+			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to %s", name_, columnTypeName(type_), T.stringof));
 		}
 	}
 
-	T get(T, string File=__FILE__, size_t Line=__LINE__)() const if (is(Unqual!T == Date)) {
+	T get(T)() const if (is(Unqual!T == Date)) {
 		switch (type_) with (PgColumnTypes) {
 		case DATE:
 			return (*cast(PgSQLDate*)buffer_.ptr).toDate;
@@ -409,15 +409,15 @@ struct PgSQLValue {
 		case TIMESTAMPTZ:
 			return (*cast(PgSQLTimestamp*)buffer_.ptr).toDate;
 		default:
-			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to %s", name_, columnTypeName(type_), T.stringof), File, Line);
+			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to %s", name_, columnTypeName(type_), T.stringof));
 		}
 	}
 
-	T get(T, string File=__FILE__, size_t Line=__LINE__)() const if (is(Unqual!T == enum)) {
-		return cast(T)get!(OriginalType!T, File, Line);
+	T get(T)() const if (is(Unqual!T == enum)) {
+		return cast(T)get!(OriginalType!T);
 	}
 
-	T get(T, string File=__FILE__, size_t Line=__LINE__)() const if (isArray!T && !is(T == enum)) {
+	T get(T)() const if (isArray!T && !is(T == enum)) {
 		final switch(type_) with (PgColumnTypes) {
 		case NUMERIC:
 		case MONEY:
@@ -460,23 +460,23 @@ struct PgSQLValue {
 		case TIMESTAMPTZ:
 		case INTERVAL:
 		case JSONB:
-			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to array", name_, columnTypeName(type_)), File, Line);
+			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to array", name_, columnTypeName(type_)));
 		}
 	}
 
-	T peek(T, string File=__FILE__, size_t Line=__LINE__)(lazy T def) const {
-		return !isNull ? peek!(T, File, Line) : def;
+	T peek(T)(lazy T def) const {
+		return !isNull ? peek!(T) : def;
 	}
 
-	T peek(T, string File=__FILE__, size_t Line=__LINE__)() const if (isScalarType!T) {
-		return get!(T, File, Line);
+	T peek(T)() const if (isScalarType!T) {
+		return get!(T);
 	}
 
-	T peek(T, string File=__FILE__, size_t Line=__LINE__)() const if (is(Unqual!T == SysTime) || is(Unqual!T == DateTime) || is(Unqual!T == Date) || is(Unqual!T == TimeOfDay)) {
-		return get!(T, File, Line);
+	T peek(T)() const if (is(Unqual!T == SysTime) || is(Unqual!T == DateTime) || is(Unqual!T == Date) || is(Unqual!T == TimeOfDay)) {
+		return get!(T);
 	}
 
-	T peek(T, string File=__FILE__, size_t Line=__LINE__)() const if (isArray!T && !is(T == enum)) {
+	T peek(T)() const if (isArray!T && !is(T == enum)) {
 		final switch(type_) with (PgColumnTypes) {
 		case NUMERIC:
 		case MONEY:
@@ -519,7 +519,7 @@ struct PgSQLValue {
 		case TIMESTAMPTZ:
 		case INTERVAL:
 		case JSONB:
-			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to array", name_, columnTypeName(type_)), File, Line);
+			throw new PgSQLErrorException(format("Cannot convert '%s' from %s to array", name_, columnTypeName(type_)));
 		}
 	}
 

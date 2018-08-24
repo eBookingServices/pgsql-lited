@@ -254,47 +254,47 @@ struct Connection(SocketType, ConnectionOptions Options = ConnectionOptions.Defa
 		return settings_;
 	}
 
-	void execute(string File=__FILE__, size_t Line=__LINE__, Args...)(const(char)[] sql, Args args) {
-		query!(File, Line)(sql, args);
+	void execute(Args...)(const(char)[] sql, Args args) {
+		query(sql, args);
 	}
 
-	void set(T, string File=__FILE__, size_t Line=__LINE__)(const(char)[] variable, T value) {
-		//query!(File, Line)("set session ?=?", PgSQLFragment(variable), value);
+	void set(T)(const(char)[] variable, T value) {
+		//query("set session ?=?", PgSQLFragment(variable), value);
 	}
 
-	const(char)[] get(string File=__FILE__, size_t Line=__LINE__)(const(char)[] variable) {
+	const(char)[] get(const(char)[] variable) {
 		const(char)[] result;
-		query!(File, Line)("show session variables like ?", variable, (PgSQLRow row) {
+		query("show session variables like ?", variable, (PgSQLRow row) {
 			result = row[1].peek!(const(char)[]).dup;
 		});
 
 		return result;
 	}
 
-	void begin(string File=__FILE__, size_t Line=__LINE__)() {
+	void begin() {
 		if (inTransaction)
-			throw new PgSQLErrorException("PgSQL does not support nested transactions - commit or rollback before starting a new transaction", File, Line);
+			throw new PgSQLErrorException("PgSQL does not support nested transactions - commit or rollback before starting a new transaction");
 
-		query!(File, Line)("start transaction");
+		query("start transaction");
 
 		assert(inTransaction);
 	}
 
-	void commit(string File=__FILE__, size_t Line=__LINE__)() {
+	void commit() {
 		if (!inTransaction)
-			throw new PgSQLErrorException("No active transaction", File, Line);
+			throw new PgSQLErrorException("No active transaction");
 
-		query!(File, Line)("commit");
+		query("commit");
 
 		assert(!inTransaction);
 	}
 
-	void rollback(string File=__FILE__, size_t Line=__LINE__)() {
+	void rollback() {
 		if (connected) {
 			if (status_.transaction != TransactionStatus.Inside)
-				throw new PgSQLErrorException("No active transaction", File, Line);
+				throw new PgSQLErrorException("No active transaction");
 
-			query!(File, Line)("rollback");
+			query("rollback");
 
 			assert(!inTransaction);
 		}
@@ -345,7 +345,7 @@ private:
 			onDisconnect_();
 	}
 
-	void query(string File, size_t Line, Args...)(const(char)[] sql, Args args) {
+	void query(Args...)(const(char)[] sql, Args args) {
 		scope(failure) disconnect_();
 
 		static if (args.length == 0) {
@@ -357,7 +357,7 @@ private:
 		enum argCount = shouldDiscard ? args.length : (args.length - 1);
 
 		static if (argCount) {
-			auto querySQL = prepareSQL!(File, Line)(sql, args[0..argCount]);
+			auto querySQL = prepareSQL(sql, args[0..argCount]);
 		} else {
 			auto querySQL = sql;
 		}
@@ -368,10 +368,10 @@ private:
 
 		auto answer = retrieve();
 		if (isStatus(answer)) {
-			eatStatuses!(File, Line)(answer);
+			eatStatuses(answer);
 		} else {
 			static if (!shouldDiscard) {
-				resultSetText!(File, Line)(answer, args[args.length - 1]);
+				resultSetText(answer, args[args.length - 1]);
 			} else {
 				discardAll(answer);
 			}
@@ -396,7 +396,7 @@ private:
 				if (settings_.ssl.enforce)
 					throw new PgSQLProtocolException("Server doesn't support SSL");
 			} else {
-				eatStatuses!(__FILE__, __LINE__)(retrieve(sslStatus[0]));
+				eatStatuses(retrieve(sslStatus[0]));
 			}
 		}
 
@@ -415,7 +415,7 @@ private:
 
 		if (eatAuth(retrieve()))
 			eatAuth(retrieve());
-		eatStatuses!(__FILE__, __LINE__)(retrieve());
+		eatStatuses(retrieve());
 	}
 
 	void send(Args...)(Args args) {
@@ -682,7 +682,7 @@ private:
 		}
 	}
 
-	auto eatStatus(string File, size_t Line)(InputPacket packet) {
+	auto eatStatus(InputPacket packet) {
 		auto type = cast(InputMessageType)packet.type();
 
 		switch (type) with (InputMessageType) {
@@ -701,7 +701,7 @@ private:
 			break;
 		case ErrorResponse:
 			eatNoticeResponse(packet);
-			throw new PgSQLErrorException(notices_.front().message.idup, File, Line);
+			throw new PgSQLErrorException(notices_.front().message.idup);
 		case CommandComplete:
 			eatCommandComplete(packet);
 			break;
@@ -712,12 +712,12 @@ private:
 		return type;
 	}
 
-	void eatStatuses(string File, size_t Line)(InputPacket packet) {
+	void eatStatuses(InputPacket packet) {
 		notices_.length = 0;
 
-		auto status = eatStatus!(File, Line)(packet);
+		auto status = eatStatus(packet);
 		while (status != InputMessageType.ReadyForQuery)
-			status = eatStatus!(File, Line)(retrieve());
+			status = eatStatus(retrieve());
 	}
 
 	void skipColumnDef(ref InputPacket packet) {
@@ -800,7 +800,7 @@ private:
 		assert(packet.empty);
 	}
 
-	void resultSetText(string File, size_t Line, RowHandler)(InputPacket packet, RowHandler handler) {
+	void resultSetText(RowHandler)(InputPacket packet, RowHandler handler) {
 		columns_.length = 0;
 
 		auto columns = cast(size_t)packet.eat!ushort;
@@ -812,7 +812,7 @@ private:
 		while (true) {
 			auto row = retrieve();
 			if (isStatus(row)) {
-				eatStatuses!(File, Line)(row);
+				eatStatuses(row);
 				break;
 			}
 
@@ -835,13 +835,13 @@ private:
 		while (true) {
 			auto row = retrieve();
 			if (isStatus(row)) {
-				eatStatuses!(__FILE__, __LINE__)(row);
+				eatStatuses(row);
 				break;
 			}
 		}
 	}
 
-	auto prepareSQL(string File, size_t Line, Args...)(const(char)[] sql, Args args) {
+	auto prepareSQL(Args...)(const(char)[] sql, Args args) {
 		auto estimated = sql.length;
 		size_t argCount;
 
@@ -947,14 +947,14 @@ private:
 		size_t indexArg;
 		foreach (i; 0..Args.length) {
 			if (!funcs[i](sql_, sql, indexArg, addrs[i]))
-				throw new PgSQLErrorException(format("Wrong number of parameters for query. Got %d but expected %d.", argCount, indexArg), File, Line);
+				throw new PgSQLErrorException(format("Wrong number of parameters for query. Got %d but expected %d.", argCount, indexArg));
 		}
 
 		if (copyUpToNext(sql_, sql)) {
 			++indexArg;
 			while (copyUpToNext(sql_, sql))
 				++indexArg;
-			throw new PgSQLErrorException(format("Wrong number of parameters for query. Got %d but expected %d.", argCount, indexArg), File, Line);
+			throw new PgSQLErrorException(format("Wrong number of parameters for query. Got %d but expected %d.", argCount, indexArg));
 		}
 
 		return sql_.data;
