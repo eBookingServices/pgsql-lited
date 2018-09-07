@@ -20,8 +20,11 @@ struct VibeSocket {
 	void close() {
 		if (socket_) {
 			socket_.close();
-			socket_ = null;
+			static if (is(typeof(socket_) == class)) {
+				socket_ = null;
+			}
 		}
+
 	}
 
 	void read(ubyte[] buffer) {
@@ -93,6 +96,10 @@ struct VibeSocket {
 	}
 
 private:
+	import vibe.core.stream;
 	TCPConnection socket_;
-	Stream stream_;
+	static if (is(StreamProxy))
+		StreamProxy stream_;
+	else
+		Stream stream_;
 }
