@@ -120,22 +120,22 @@ struct Inserter(ConnectionType) {
 
 		foreach (size_t i, Arg; Args) {
 			static if (isSomeString!(OriginalType!Arg)) {
-				fieldsHash_ ~= hashOf(fieldNames[i]);
+				fieldsHash_ ~= pgsql.row.hashOf(fieldNames[i]);
 				fieldsNames_ ~= fieldNames[i];
 
-				app.put('`');
+				//app.put('`');
 				app.put(fieldNames[i]);
-				app.put('`');
+				//app.put('`');
 			} else {
 				auto columns = fieldNames[i];
 				foreach (j, name; columns) {
 
-					fieldsHash_ ~= hashOf(name);
+					fieldsHash_ ~= pgsql.row.hashOf(name);
 					fieldsNames_ ~= name;
 
-					app.put('`');
+					//app.put('`');
 					app.put(name);
-					app.put('`');
+					//app.put('`');
 					if (j + 1 != columns.length)
 						app.put(',');
 				}
@@ -166,12 +166,12 @@ struct Inserter(ConnectionType) {
 			alias memberType = typeof(__traits(getMember, param, member));
 			static if (isValueType!(memberType)) {
 				static if (getUDAs!(__traits(getMember, param, member), NameAttribute).length){
-					enum nameHash = hashOf(parentMembers~getUDAs!(__traits(getMember, param, member), NameAttribute)[0].name);
+					enum nameHash = pgsql.row.hashOf(parentMembers~getUDAs!(__traits(getMember, param, member), NameAttribute)[0].name);
 				}
 				else {
-					enum nameHash = hashOf(parentMembers~member);
+					enum nameHash = pgsql.row.hashOf(parentMembers~member);
 				}
-				if (nameHash == fieldHash || (parentMembers == "" && getUDAs!(T, UnCamelCaseAttribute).length && hashOf(member.unCamelCase) == fieldHash)) {
+				if (nameHash == fieldHash || (parentMembers == "" && getUDAs!(T, UnCamelCaseAttribute).length && pgsql.row.hashOf(member.unCamelCase) == fieldHash)) {
 					appendValue(values_, __traits(getMember, param, member));
 					fieldFound = true;
 					return;
@@ -285,7 +285,7 @@ struct Inserter(ConnectionType) {
 	}
 
 
-	void flush(string File=__FILE__, size_t Line=__LINE__)() {
+	void flush() {
 		if (pending_) {
 			if (dupUpdate_.length) {
 				values_.put(cast(ubyte[])" on duplicate key update ");
@@ -295,7 +295,7 @@ struct Inserter(ConnectionType) {
 			auto sql = cast(char[])values_.data();
 			reset();
 
-			conn_.execute!(File, Line)(sql);
+			conn_.execute(sql);
 			++flushes_;
 		}
 	}
