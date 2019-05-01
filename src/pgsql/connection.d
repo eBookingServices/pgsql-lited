@@ -53,6 +53,16 @@ struct ConnectionNotice {
 	const(char)[] column;
 	const(char)[] type;
 	const(char)[] constraint;
+
+	string toString() const {
+		auto writer = appender!string;
+		toString(writer);
+		return writer.data;
+	}
+
+	void toString(W)(ref W writer) const {
+		writer.formattedWrite("%s(%s) %s", severity, code, message);
+	}
 }
 
 
@@ -252,6 +262,10 @@ struct Connection(SocketType, ConnectionOptions Options = ConnectionOptions.Defa
 
 	ConnectionSettings settings() const {
 		return settings_;
+	}
+
+	const(ConnectionNotice)[] notices() const {
+		return notices_;
 	}
 
 	void execute(Args...)(const(char)[] sql, Args args) {
