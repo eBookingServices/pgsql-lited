@@ -33,7 +33,7 @@ void appendValue(Appender, T)(ref Appender appender, T value) if (isInstanceOf!(
 
 void appendValue(Appender, T)(ref Appender appender, T value) if (isScalarType!T) {
 	static if (isBoolean!T) {
-		appender.put(value ? 't' : 'f');
+		appender.put(value ? "'t'" : "'f'");
 	} else {
 		appender.put(cast(ubyte[])to!string(value));
 	}

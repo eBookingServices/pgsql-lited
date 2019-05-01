@@ -256,7 +256,7 @@ struct PgSQLValue {
 		case NULL:
 			break;
 		case BOOL:
-			formattedWrite(&app, "%s", *cast(bool*)buffer_.ptr);
+			app.put(*cast(bool*)buffer_.ptr ? "TRUE" : "FALSE");
 			break;
 		case CHAR:
 			formattedWrite(&app, "%s", *cast(ubyte*)buffer_.ptr);
