@@ -534,7 +534,8 @@ private:
 			break;
 		case ErrorResponse:
 			eatNoticeResponse(packet);
-			throw new PgSQLErrorException(notices_.front().message.idup);
+			throwError(true);
+			break;
 		default:
 			throw new PgSQLProtocolException(format("Unexpected message: %s", type));
 		}
@@ -614,37 +615,37 @@ private:
 				}
 				break;
 			case Code:
-				notice.code = value;
+				notice.code = value.idup;
 				break;
 			case Message:
-				notice.message = value;
+				notice.message = value.idup;
 				break;
 			case Detail:
-				notice.detail = value;
+				notice.detail = value.idup;
 				break;
 			case Hint:
-				notice.hint = value;
+				notice.hint = value.idup;
 				break;
 			case Position:
 				notice.position = value.to!uint;
 				break;
 			case Where:
-				notice.where = value;
+				notice.where = value.idup;
 				break;
 			case Schema:
-				notice.schema = value;
+				notice.schema = value.idup;
 				break;
 			case Table:
-				notice.table = value;
+				notice.table = value.idup;
 				break;
 			case Column:
-				notice.column = value;
+				notice.column = value.idup;
 				break;
 			case DataType:
-				notice.type = value;
+				notice.type = value.idup;
 				break;
 			case Constraint:
-				notice.constraint = value;
+				notice.constraint = value.idup;
 				break;
 			case File:
 			case Line:
@@ -683,6 +684,10 @@ private:
 			status_.insertID = 0;
 			status_.affected = tag.empty() ? 0 : tag.front().to!ulong;
 			break;
+		case hashOf("CREATE"):
+		case hashOf("DROP"):
+			status_.insertID = 0;
+			break;
 		default:
 			throw new PgSQLProtocolException(format("Unexpected command tag: %s", command));
 		}
@@ -707,7 +712,8 @@ private:
 			break;
 		case ErrorResponse:
 			eatNoticeResponse(packet);
-			throw new PgSQLErrorException(notices_.front().message.idup);
+			throwError(true);
+			break;
 		case CommandComplete:
 			eatCommandComplete(packet);
 			break;
@@ -716,6 +722,22 @@ private:
 		}
 
 		return type;
+	}
+
+	void throwError(bool force) {
+		foreach (ref notice; notices_) {
+			switch (notice.severity) with (ConnectionNotice.Severity) {
+			case PANIC:
+			case ERROR:
+			case FATAL:
+				throw new PgSQLErrorException(cast(string)notice.message);
+			default:
+				break;
+			}
+		}
+
+		if (force)
+			throw new PgSQLErrorException(cast(string)notices_.front().message);
 	}
 
 	void eatStatuses(InputPacket packet) {
