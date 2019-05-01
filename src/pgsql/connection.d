@@ -529,6 +529,12 @@ private:
 			reply.finalize(0);
 			socket_.write(reply.get());
 			break;
+		case NoticeResponse:
+			eatNoticeResponse(packet);
+			break;
+		case ErrorResponse:
+			eatNoticeResponse(packet);
+			throw new PgSQLErrorException(notices_.front().message.idup);
 		default:
 			throw new PgSQLProtocolException(format("Unexpected message: %s", type));
 		}
