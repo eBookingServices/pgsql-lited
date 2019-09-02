@@ -61,6 +61,7 @@ struct ConnectionNotice {
 	}
 
 	void toString(W)(ref W writer) const {
+		import std.format : formattedWrite;
 		writer.formattedWrite("%s(%s) %s", severity, code, message);
 	}
 }
